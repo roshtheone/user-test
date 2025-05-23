@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tiwanex UX Designer Test</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; background-color: #f7f7f7; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+    h1 { color: #333; }
+    #timer { font-size: 24px; font-weight: bold; color: red; }
+    .question, #quizForm, button { display: block; }
+    .question { margin-bottom: 20px; padding: 15px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+    .question h3 { margin-bottom: 10px; }
+    .question label { display: block; margin: 5px 0; cursor: pointer; }
+    button { margin-top: 20px; padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:disabled { background: #aaa; cursor: not-allowed; }
+    input[type="text"] { margin: 8px 0; padding: 8px; border-radius: 4px; border: 1px solid #ccc; width: 220px; }
+    footer { margin-top: 40px; font-style: italic; }
+    #report { margin-top: 40px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 0 8px rgba(0, 0, 0, 0.1); display: none; }
+    .bar { background-color: #ddd; border-radius: 20px; overflow: hidden; height: 30px; margin-top: 10px; }
+    .bar-fill { height: 100%; background-color: #4CAF50; width: 0; text-align: center; line-height: 30px; color: white; transition: width 1s ease-in-out; }
+    .correct { color: green; font-weight: bold; }
+    .incorrect { color: red; font-weight: bold; }
+    .tick::before { content: '✔ '; color: green; }
+    .cross::before { content: '✘ '; color: red; }
+    #quizScreen { animation: fadeIn 0.5s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Tiwanex</h1>
+    <div id="timer">55:00</div>
+  </header>
+
+  <!-- Instructions shown everywhere -->
+  <div id="instructions" class="question" style="margin-bottom:30px;">
+    <h2>Instructions</h2>
+    <ul>
+      <li>You must take this test on a laptop or computer (no cell phones allowed).</li>
+      <li>Before starting Round 4A, make sure Zoom, Loom, or Google Meet is already installed.</li>
+      <li>You must use Zoom (or Loom/Google Meet) to record your full screen and webcam for the entire test.</li>
+      <li>Your face must be visible at all times. Do not cover the camera or exit the recording—doing so will result in immediate rejection.</li>
+      <li>This test is protected. Do not use AI tools or shortcuts to find answers.</li>
+      <li>Throughout this test, you’ll learn new things and practice real UX skills that will help you build your career.</li>
+      <li>After finishing, download your recording, upload it to Google Drive, take a screenshot of your results, and email both to <b>team@tiwanex.com</b> with your name. We’ll review and contact you for the interview.</li>
+    </ul>
+  </div>
+
+  <div id="startScreen">
+    <h2>Welcome to the UX Designer Testing - Round 4A</h2>
+    <p>Please enter your full name to begin.</p>
+    <input type="text" id="firstName" placeholder="First Name" required>
+    <input type="text" id="lastName" placeholder="Last Name" required>
+    <button onclick="startTest()">Start Test</button>
+  </div>
+
+  <div id="quizScreen" style="display:none">
+    <form id="quizForm"></form>
+    <button type="button" onclick="submitQuiz()">Submit Test</button>
+    <div id="report">
+      <h2>Your Score</h2>
+      <p id="scoreText"></p>
+      <p id="userInfo"></p>
+      <div class="bar">
+        <div class="bar-fill" id="barFill">0%</div>
+      </div>
+      <div id="answerReview"></div>
+      <div id="progressInfo"></div>
+      <p><strong>Take a screenshot of this page and submit it along with your Zoom recording to team@tiwanex.com.</strong></p>
+    </div>
+  </div>
+
+  <footer>
+    Your results will be displayed here after submission. Accuracy matters. Take your time.
+  </footer>
+
+  <script>
+    let signInTime = null;
+    let signOutTime = null;
+    let timerInterval;
+    let quizSubmitted = false;
+
+    const questions = [
+      { q: "Which of the following is a key benefit of creating a low-fidelity prototype?", options: ["High user engagement", "Quick feedback and iteration", "Accurate color representation", "Detailed visual design", "Finalized user interface"], correct: 1 },
+      { q: "In UX design, what does the term 'affordance' primarily refer to?", options: ["The usability of interactive elements", "The aesthetic appeal of a design", "The speed of user interactions", "The consistency of the design system", "The perceived function of an object"], correct: 4 },
+      { q: "Which of Jakob Nielsen’s usability heuristics emphasizes giving users control?", options: ["Recognition rather than recall", "Aesthetic and minimalist design", "User control and freedom", "Error prevention", "Visibility of system status"], correct: 2 },
+      { q: "What is the primary goal of conducting A/B testing?", options: ["To measure loading speed between designs", "To identify bugs in layout or functionality", "To assess brand consistency", "To compare two design versions to determine performance", "To finalize color usage"], correct: 3 },
+      { q: "What is a critical advantage of incorporating a design system in your UI/UX strategy?", options: ["Reduces wireframe dependency", "Enables random creative exploration", "Ensures visual consistency across platforms", "Minimizes user research", "Speeds up UI animation rendering"], correct: 2 },
+      { q: "In a user-centered design process, which phase is arguably most crucial?", options: ["Ideation", "Understanding the user", "Implementation", "Prototyping", "Testing"], correct: 1 },
+      { q: "A wireframe is best described as...", options: ["A detailed UI mockup with real copy", "A low-fidelity layout that outlines structure and flow", "A full-color final design", "An HTML/CSS-coded interactive screen", "A behavioral persona"], correct: 1 },
+      { q: "Usability testing helps teams to...", options: ["Improve visual branding", "Identify pain points and validate flows", "Evaluate backend performance", "Choose fonts and iconography", "Track SEO performance"], correct: 1 },
+      { q: "What tool is commonly used for building interactive prototypes in design?", options: ["Excel", "WordPress", "Photoshop", "Figma", "Slack"], correct: 3 },
+      { q: "What is the core function of a user persona in UX?", options: ["Finalize branding documents", "Inform design decisions by reflecting real user needs", "Automate UI testing", "Drive content marketing strategy", "Outline technical backend needs"], correct: 1 },
+      { q: "Mobile-first design primarily focuses on...", options: ["Maximizing screen size real estate", "High-res image use", "Minimalist, essential features only", "Responsive grids for tablets", "Enhanced color gradients"], correct: 2 },
+      { q: "Responsive design is defined as...", options: ["Using animations that respond to clicks", "Optimizing sites for tablets only", "Creating interfaces that adapt fluidly to multiple screen sizes", "Implementing real-time feedback loops", "Designing for branding before user needs"], correct: 2 },
+      { q: "A heuristic evaluation is primarily used to...", options: ["Compare developer frameworks", "Enforce branding guidelines", "Assess usability using expert insights", "Finalize data structure", "Plan SEO strategy"], correct: 2 },
+      { q: "To understand the user's emotional and decision-making journey, you’d use...", options: ["High-fidelity UI", "Journey mapping", "Frontend prototyping", "Heatmap testing", "Chatbot analysis"], correct: 1 },
+      { q: "According to Fitt’s Law, which interaction would be fastest?", options: ["A tiny button far from the cursor", "A large, nearby call-to-action", "A full-screen modal form", "An icon behind a tooltip", "A hidden hamburger menu"], correct: 1 },
+      { q: "What’s a common accessibility design mistake?", options: ["Using dark backgrounds", "Assuming all users have the same ability levels", "Adding alt text", "Including captions for video", "Using readable fonts"], correct: 1 },
+      { q: "What does 'universal design' aim for?", options: ["Optimized interfaces for top-tier devices only", "Cross-browser compatibility", "Inclusive usability for the widest user base", "Global font compatibility", "Legal approval prior to UI updates"], correct: 2 },
+      { q: "The main reason to conduct user interviews in early UX research is...", options: ["Gather deep qualitative insights", "Validate the UI components", "Review server errors", "Plan video marketing", "Animate microinteractions"], correct: 0 },
+      { q: "Card sorting helps UX teams to...", options: ["Determine content hierarchy based on user mental models", "Create wireframes automatically", "Design hero sections", "Visualize user clicks", "Improve backend APIs"], correct: 0 },
+      { q: "High-fidelity prototypes should include...", options: ["Real content, branding, and interactive states", "Placeholder text only", "Skeletons and dummy icons", "Technical performance logs", "Rough sketches scanned into Figma"], correct: 0 },
+      { q: "'Information Architecture' in UX refers to...", options: ["UI stylesheets", "The hierarchy and structure of content and navigation", "Pixel design", "App naming", "User surveys"], correct: 1 },
+      { q: "A design sprint allows teams to...", options: ["Launch apps faster than agile sprints", "Get feedback quickly through rapid prototyping", "Finalize backend design", "Redo usability tests post-launch", "Sync Figma and Notion workflows"], correct: 1 },
+      { q: "MVP means...", options: ["Maximum Visual Prototype", "Market Validation Process", "Minimum Viable Product", "Most Valuable Page", "Mobile View Prioritization"], correct: 2 },
+      { q: "Empathy in UX means...", options: ["Understanding user frustrations to design better experiences", "Simplifying interface animations", "Focusing only on accessibility", "Reacting to stakeholder feedback", "Building user personas quickly"], correct: 0 },
+      { q: "UX consistency ensures...", options: ["Brand tone changes across screens", "Dev teams have freedom to improvise", "Users don’t need to relearn patterns every time", "SEO boosts automatically", "Faster color scheme iteration"], correct: 2 },
+      { q: "Prototypes are built primarily to...", options: ["Validate UI decisions through user testing", "Record animation speed", "Create backend workflows", "Launch first release", "Optimize browser cache"], correct: 0 },
+      { q: "Good onboarding UX should...", options: ["Confuse the user into exploring more", "Force completion before access", "Clearly guide new users to core features fast", "Delay value for first-time users", "Overload users with all features up front"], correct: 2 },
+      { q: "A 'microinteraction' is...", options: ["A small moment that provides feedback or delight", "A backend API event", "A CSS animation loop", "A data collection prompt", "A survey pop-up"], correct: 0 },
+      { q: "Culturally adaptable UX design means...", options: ["Designing once for all global users without testing", "Using local dialects as default", "Keeping layout and messaging flexible for localization", "Restricting animations", "Removing visuals entirely"], correct: 2 },
+      { q: "A usability benchmark measures...", options: ["Daily UI uploads", "Internal team satisfaction", "Long-term product usability improvements or comparisons", "Video load speed", "App Store ratings only"], correct: 2 }
+    ];
+
+    function startTest() {
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      if (!firstName || !lastName) {
+        alert('Please enter your full name.');
+        return;
+      }
+      signInTime = new Date();
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('quizScreen').style.display = 'block';
+      renderQuestions();
+      startTimer(55 * 60); // 55 minutes in seconds
+    }
+
+    function renderQuestions() {
+      const quizForm = document.getElementById('quizForm');
+      quizForm.innerHTML = '';
+      questions.forEach((q, idx) => {
+        const div = document.createElement('div');
+        div.className = 'question';
+        div.innerHTML = `<h3>Q${idx + 1}. ${q.q}</h3>` +
+          q.options.map((opt, i) =>
+            `<label><input type="radio" name="q${idx}" value="${i}" required> ${opt}</label>`
+          ).join('');
+        quizForm.appendChild(div);
+      });
+    }
+
+    function submitQuiz() {
+      if (quizSubmitted) return;
+      quizSubmitted = true;
+      clearInterval(timerInterval);
+      signOutTime = new Date();
+      const quizForm = document.getElementById('quizForm');
+      const formData = new FormData(quizForm);
+      let score = 0;
+      let reviewHtml = '';
+      questions.forEach((q, idx) => {
+        const userAns = formData.get(`q${idx}`);
+        const correctIdx = q.correct;
+        const isCorrect = userAns == correctIdx;
+        if (isCorrect) score++;
+        reviewHtml += `<div>
+          <span class="${isCorrect ? 'tick correct' : 'cross incorrect'}">
+            Q${idx + 1}: ${q.options[correctIdx]}
+          </span>
+          ${!isCorrect ? `<span class="incorrect"> (Your answer: ${userAns !== null ? q.options[userAns] : 'No answer'})</span>` : ''}
+        </div>`;
+      });
+      document.getElementById('scoreText').textContent = `You scored ${score} out of ${questions.length}.`;
+      document.getElementById('userInfo').textContent =
+        `Name: ${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`;
+      document.getElementById('answerReview').innerHTML = reviewHtml;
+      // Progress bar
+      const percent = Math.round((score / questions.length) * 100);
+      const barFill = document.getElementById('barFill');
+      barFill.style.width = percent + '%';
+      barFill.textContent = percent + '%';
+      // Progress info
+      document.getElementById('progressInfo').innerHTML =
+        `<p><b>Sign-in Time:</b> ${signInTime ? signInTime.toLocaleString() : ''}<br>
+         <b>Sign-out Time:</b> ${signOutTime ? signOutTime.toLocaleString() : ''}</p>`;
+      // Show report
+      document.getElementById('report').style.display = 'block';
+      document.getElementById('report').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Timer
+    function startTimer(seconds) {
+      clearInterval(timerInterval);
+      let remaining = seconds;
+      function updateTimer() {
+        const min = String(Math.floor(remaining / 60)).padStart(2, '0');
+        const sec = String(remaining % 60).padStart(2, '0');
+        document.getElementById('timer').textContent = `${min}:${sec}`;
+        if (remaining <= 0) {
+          clearInterval(timerInterval);
+          if (!quizSubmitted) {
+            alert('Time is up! Submitting your test.');
+            submitQuiz();
+          }
+        }
+        remaining--;
+      }
+      updateTimer();
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+  </script>
+</body>
+</html>
